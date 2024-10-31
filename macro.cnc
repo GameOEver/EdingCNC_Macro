@@ -189,7 +189,7 @@ sub dynamic_tls
 	G4 P0												;wait for moves to finish
 
 	IF [[#5008 <> 99] AND [#234 == 0]]
-		dlgmsg "Es ist noch kein Z Offset für die Probe gesetzt."
+		dlgmsg "Es ist noch kein Z Offset für die Probe gesetzt. Fortfahren?"
 			IF [[#5398] == 1]
 														;Programm fortführen
 			ELSE
@@ -205,11 +205,11 @@ sub dynamic_tls
 	G38.2 G91 Z-100 F#4234 							;look for TLS
 	G1 G91 Z+2 F500									;Von Sensor zurück fahren
 
-	IF [[#5067] == 1]									;Wenn Sensor gefunden wurde
-		G38.2 G91 Z-5 F#4235 					;Werkzeug messen
+	IF [[#5067] == 1]								;Wenn Sensor gefunden wurde
+		G38.2 G91 Z-5 F#4235 						;Werkzeug messen
 		G1 G91 Z+5 F500								;Von Sensor zurück fahren
 		G90											;Absolute Koordinaten verwenden
-		G1 G53 Z#4233 F500									;Sichere Höhe Verfahrwege
+		G1 G53 Z#4233 F500							;Sichere Höhe Verfahrwege
 
 		IF [[#5008] == 99]							;Wenn T99(Probe)
 			#234 = #5053							;Referenzwert setzen
@@ -240,7 +240,7 @@ sub 3dmessung
 	msg "PROBE ANSCHLIESSEN!!!"
 	M0
 
-	msg "an linke untere Ecke fahren, so, dass Z gemessen werden kann."
+	msg "an linke untere Ecke fahren, Z wird zuerst gemessen."
 	M0
 
 	G38.2 G91 Z-10 F100								;Werkstück suchen
