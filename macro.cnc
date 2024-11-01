@@ -12,7 +12,7 @@
 ;#4233 = Sichere Höhe für Verfahrwege G53
 ;#4234 = Suchgeschwindigkeit TLS
 ;#4235 = Messgeschwindigkeit TLS
-;#4300 = Durchmesser 3d Probe Spitze
+;#4300 = Durchmesser 3d Probe Spitze / 2
 
 
 G17 G21 G90
@@ -265,7 +265,7 @@ sub 3dmessung
 	G1 G91 X-2 F500									;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 X+5 F25							;Werkstück messen
-		G10 L20 P1 X0								;G54 auf X0 setzen
+		G10 L20 P1 X-#4300							;G54 auf X0 setzen
 		G1 G91 X-10 F500							;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
@@ -280,7 +280,7 @@ sub 3dmessung
 	G1 G91 Y-2 F500									;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 Y+5 F25							;Werkstück messen
-		G10 L20 P1 Y0								;G54 auf Y0 setzen
+		G10 L20 P1 Y-#4300								;G54 auf Y0 setzen
 		G1 G91 Y-10 F500							;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
@@ -299,7 +299,7 @@ sub Probe_X_pos
 	msg "maximal 5mm links neben das zu messende Werkstueck fahren, dann cycle start druecken!"
 	M0
 	G38.2 G91 X+5 F25							;Werkstück messen
-	G10 L20 P1 X0								;G54 auf X0 setzen
+	G10 L20 P1 X-#4300								;G54 auf X0 setzen
 	G1 G91 X-5 F500								;Vom Sensor zurück fahren
 	G90
 	IF [#5067 == 1]
@@ -313,7 +313,7 @@ sub Probe_Y_pos
 	msg "maximal 5mm vor das zu messende Werkstueck fahren, dann cycle start druecken!"
 	M0
 	G38.2 G91 Y+5 F25							;Werkstück messen
-	G10 L20 P1 Y0								;G54 auf Y0 setzen
+	G10 L20 P1 Y-#4300								;G54 auf Y0 setzen
 	G1 G91 Y-5 F500								;Vom Sensor zurück fahren
 	G90
 	IF [#5067 == 1]
