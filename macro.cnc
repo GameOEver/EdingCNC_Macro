@@ -6,6 +6,8 @@
 ;#212 = 1. Messpunkt X waehrend Kalibrierung
 ;#213 = 2. Messpunkt X waehrend Kalibrierung
 ;#234 = Z Offset (errechnet)
+;#3000 = INIT
+;#3001 = Used in change_tool
 ;#4230 = X Position TLS
 ;#4231 = Y Position TLS
 ;#4232 = Sichere Höhe für Werkzeugwechsel (IN G53!!)
@@ -14,22 +16,17 @@
 ;#4235 = Messgeschwindigkeit TLS
 ;#4300 = Durchmesser 3d Probe Spitze / 2
 
-; Position Y des WLS G53
-;#4231 = <TLS_Y> ;muss eingetragen werden
-; Y bei mir unnötig
-; Sichere Höhe für Werkzeugwechsel (IN G53!!)
-#4232 = -70 ;muss eingetragen werden
-; Sichere Höhe für Verfahrwege G53
-#4233 = [#5113-1] ;muss eingetragen werden
-; Suchgeschwindigkeit TLS 
-#4234 = 200 ;muss eingetragen werden
-; Messgeschwindigkeit TLS 
-#4235 = 10 ;muss eigetragen werden
+G17 G21 G90 F500			;Grundeinstellung setzen
 
 
-
-G17 G21 G90
-
+IF [#3500 == 0]
+	#3500 = 1
+	#4232 = -70 			;Sichere Höhe für Werkzeugwechsel (IN G53!!)
+	#4233 = [#5113-1]		;Sichere Höhe für Verfahrwege G53
+	#4234 = 200				;Suchgeschwindigkeit Probe/TLS (mm/min)
+	#4235 = 10				;Messgeschwindigkeit Probe/TLS (mm/min)
+ENDIF
+	
 ;User functions, F1..F11 in user menu
 
 Sub user_1
@@ -116,7 +113,7 @@ sub home_all
     msg "Home complete"
 endsub
 
-Sub zero_set_rotation
+Sub zero_set_rotation				;automation needed
     msg "move to first point, press control-G to continue"
     m0
     #5020 = #5071 ;x1
@@ -136,37 +133,26 @@ Endsub
 
 
 sub change_tool
-	; Position Y des WLS G53
-	;#4231 = <TLS_Y> ;muss eingetragen werden
-	; Y bei mir unnötig
-	; Sichere Höhe für Werkzeugwechsel (IN G53!!)
-	#4232 = -70 ;muss eingetragen werden
-	; Sichere Höhe für Verfahrwege G53
-	#4233 = [#5113-1] ;muss eingetragen werden
-	; Suchgeschwindigkeit TLS 
-	#4234 = 200 ;muss eingetragen werden
-	; Messgeschwindigkeit TLS 
-	#4235 = 10 ;muss eigetragen werden
-
 	M5										;Spindel aus
 	M9										;Kühlung aus
 	G1 G53 Z#4233 F500						;Sichere Höhe Verfahrwege
 
     ;Use #5015 to indicate succesfull toolchange
-    #5015 = 0 ; Tool change not performed
+    #5015 = 0 ;Tool change not performed
+	#3001 = 0 ;Not the same tool being loaded
 
     ; check tool in spindle and exit sub
-    	If [ [#5011] == [#5008] ]
-        	msg "Tool already in spindle"
-        	#5015 = 1 ;indicate tool change performed
-    	ELSE    
-	
+    If [ [#5011] == [#5008] ]
+        msg "Tool already in spindle"
+        #5015 = 1 ;indicate tool change performed
+		#3001 = 1 ;same tool being loaded
+    ELSE    
 		msg "Tool "#5011" einsetzen, dann mit Cycle Start fortfahren!"
 		M0        
 		#5015 = 1 ; Tool change performed
 	ENDIF
 	
-	IF [[#5015] == 1] THEN   
+	IF [[#3001] == 0] THEN   
 		msg "Tool " #5008" durch Tool " #5011 " ersetzt."
 	    M6 T[#5011]					; Neue Werkzeugnummer setzen
 		gosub dynamic_tls			; Tool einmessen
@@ -183,7 +169,7 @@ sub dynamic_tls
 	; 5051 - 5056 Probe Position in X..C in G53
 	; #5053 ist die Probe Position in Z (G53)
 
-	; G43.1 K<neues dynamisches Z offset>
+	; G43 aktiviert das Z Offset vom Tooltable
 	; G49 löscht das Z Offset, kann aber stattdessen auch überschrieben werden
 
 	; Position X des WLS G53
@@ -195,24 +181,11 @@ sub dynamic_tls
 
 	; #234 speichert den Referenzwert(in Z G53) von T99
 	
-	; Position Y des WLS G53
-	;#4231 = <TLS_Y> ;muss eingetragen werden
-	; Y bei mir unnötig
-	; Sichere Höhe für Werkzeugwechsel (IN G53!!)
-	#4232 = -70 ;muss eingetragen werden
-	; Sichere Höhe für Verfahrwege G53
-	#4233 = [#5113-1] ;muss eingetragen werden
-	; Suchgeschwindigkeit TLS 
-	#4234 = 200 ;muss eingetragen werden
-	; Messgeschwindigkeit TLS 
-	#4235 = 10 ;muss eigetragen werden
-
-
 	M5													;Spindel aus
 	M9													;Kühlung aus
-	G1 G53 Z#4233 F500									;Sichere Höhe Verfahrwege
-	G1 G53 X#4230 F500									;Fahre zur X Position des TLS
-	G1 G53 Z#4232 F500									;Starthöhe Messung TLS
+	G0 G53 Z#4233										;Sichere Höhe Verfahrwege
+	G0 G53 X#4230 										;Fahre zur X Position des TLS
+	G0 G53 Z#4232 										;Starthöhe Messung TLS
 	G4 P0												;wait for moves to finish
 
 	IF [[#5008 <> 99] AND [#234 == 0]]
@@ -222,38 +195,36 @@ sub dynamic_tls
 			ELSE
 				errmsg "Es wurde kein Z Offset gesetzt, bitte neu starten."
 			ENDIF
-	ELSE
-	;
 	ENDIF
 
 	msg "Messung wird gesartet. Mit Cycle Start fortfahren."
 	M0
 
-	G38.2 G91 Z-100 F#4234 							;look for TLS
-	G1 G91 Z+2 F500									;Von Sensor zurück fahren
+	G38.2 G91 Z-100 F#4234 									;look for TLS
+	G0 G91 Z+2												;Von Sensor zurück fahren
 
-	IF [[#5067] == 1]								;Wenn Sensor gefunden wurde
-		G38.2 G91 Z-5 F#4235 						;Werkzeug messen
-		G1 G91 Z+5 F500								;Von Sensor zurück fahren
-		G90											;Absolute Koordinaten verwenden
-		G1 G53 Z#4233 F500							;Sichere Höhe Verfahrwege
+	IF [[#5067] == 1]										;Wenn Sensor gefunden wurde
+		G38.2 G91 Z-5 F#4235 								;Werkzeug messen
+		G0 G91 Z+5											;Von Sensor zurück fahren
+		G90													;Absolute Koordinaten verwenden
+		G0 G53 Z#4233										;Sichere Höhe Verfahrwege
 
-		IF [[#5008] == 99]							;Wenn T99(Probe)
-			#234 = #5053							;Referenzwert setzen
+		IF [[#5008] == 99]									;Wenn T99(Probe)
+			#234 = #5053									;Referenzwert setzen
 			msg "Referenz auf G53 "#5053" gesetzt."
-		ELSE										;Wenn nicht T99
-			IF [[#234] <> 0]							;Wenn Referenzwert vorhanden
+		ELSE												;Wenn nicht T99
+			IF [[#234] <> 0]								;Wenn Referenzwert vorhanden
 				#[5400+#5008]=[#5053 - #234]				;Z-Offset berechnen und auf Tooltable anwenden
 				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#234]""
-				G43									;TLO vom Tooltable aktivieren
-			ELSE									;Wenn kein Referenzwert vorhanden
-				#234 = #5053						;Referenzwert setzen
+				G43											;TLO vom Tooltable aktivieren
+			ELSE											;Wenn kein Referenzwert vorhanden
+				#234 = #5053								;Referenzwert setzen
 				msg "Referenz auf G53 "#5053" gesetzt."
 			ENDIF
 		ENDIF
 	ELSE
-		G1 Z#4233 F200 								;Sichere Höhe Verfahrwege
-		errmsg "Kein Sensor gefunden!"				;Error ausgeben, kein Sensor gefunden
+		G1 Z#4233 F200 										;Sichere Höhe Verfahrwege
+		errmsg "Kein Sensor gefunden!"						;Error ausgeben, kein Sensor gefunden
 	ENDIF
 EndSub
 
@@ -267,51 +238,51 @@ sub 3dmessung
 	msg "PROBE ANSCHLIESSEN!!!"
 	M0
 
-	msg "an linke untere Ecke fahren, Z wird zuerst gemessen."
+	msg "An linke untere Ecke fahren, Z wird zuerst gemessen."
 	M0
 
 	G38.2 G91 Z-10 F100								;Werkstück suchen
-	G1 G91 Z+2 F500									;Vom Sensor zurück fahren
+	G0 G91 Z+2										;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 Z-5 F25							;Werkstück langsam messen
 		G10 L20 P1 Z0								;G54 auf Z0 setzen
-		G1 G91 Z+5 F500								;Vom Sensor zurück fahren
+		G0 G91 Z+5									;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
 	ENDIF
 
-	G1 G91 X-10 F200								;links neben das Werkstück fahren, um X+ zu messen
-	G1 G90 Z-3 F200									;Auf (absolut/G90) Z-3 fahren (Messhöhe)
+	G0 G91 X-10 									;links neben das Werkstück fahren, um X+ zu messen
+	G0 G90 Z-3 										;Auf (absolut/G90) Z-3 fahren (Messhöhe)
 
 	G38.2 G91 X+15 F100								;Werkstück suchen
-	G1 G91 X-2 F500									;Vom Sensor zurück fahren
+	G0 G91 X-2										;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 X+5 F25							;Werkstück messen
 		G10 L20 P1 X-#4300							;G54 auf X0 setzen
-		G1 G91 X-10 F500							;Vom Sensor zurück fahren
+		G0 G91 X-10									;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
 	ENDIF
 
-	G1 G90 Z10 F500									;10mm über das Werkstück fahren
-	G1 G91 Y-10 F500								;10mm nach vorne fahren
-	G1 G90 X10 F500									;10mm nach rechts fahren
-	G1 G90 Z-3 F200									;Auf (absolut/G90) Z-3 fahren (Messhöhe)
+	G0 G90 Z10 										;10mm über das Werkstück fahren
+	G0 G91 Y-10 									;10mm nach vorne fahren
+	G0 G90 X10 										;10mm nach rechts fahren
+	G0 G90 Z-3 										;Auf (absolut/G90) Z-3 fahren (Messhöhe)
 
 	G38.2 G91 Y+15 F100								;Werkstück suchen
-	G1 G91 Y-2 F500									;Vom Sensor zurück fahren
+	G0 G91 Y-2										;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 Y+5 F25							;Werkstück messen
-		G10 L20 P1 Y-#4300								;G54 auf Y0 setzen
-		G1 G91 Y-10 F500							;Vom Sensor zurück fahren
+		G10 L20 P1 Y-#4300							;G54 auf Y0 setzen
+		G0 G91 Y-10									;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
 	ENDIF
 
 	G90												;Auf Absolutwerte umschalten
-	G1 Z15 F200										;Über das Werkstück fahren
-	G1 X0 F200										;Auf X0 fahren
-	G1 Y0 F200										;Auf Y0 fahren
+	G0 Z5 											;Über das Werkstück fahren
+	G0 X0 											;Auf X0 fahren
+	G0 Y0 											;Auf Y0 fahren
 	G4 P0											;Auf Fahrbewegungen warten
 
 	msg "Messung abgeschlossen!"
@@ -320,9 +291,9 @@ endsub
 sub Probe_X_pos
 	msg "maximal 5mm links neben das zu messende Werkstueck fahren, dann cycle start druecken!"
 	M0
-	G38.2 G91 X+5 F25							;Werkstück messen
+	G38.2 G91 X+5 F25								;Werkstück messen
 	G10 L20 P1 X-#4300								;G54 auf X0 setzen
-	G1 G91 X-5 F500								;Vom Sensor zurück fahren
+	G0 G91 X-5 										;Vom Sensor zurück fahren
 	G90
 	IF [#5067 == 1]
 		msg "Messung erfolgreich"
@@ -334,9 +305,9 @@ endsub
 sub Probe_Y_pos
 	msg "maximal 5mm vor das zu messende Werkstueck fahren, dann cycle start druecken!"
 	M0
-	G38.2 G91 Y+5 F25							;Werkstück messen
+	G38.2 G91 Y+5 F25								;Werkstück messen
 	G10 L20 P1 Y-#4300								;G54 auf Y0 setzen
-	G1 G91 Y-5 F500								;Vom Sensor zurück fahren
+	G0 G91 Y-5 										;Vom Sensor zurück fahren
 	G90
 	IF [#5067 == 1]
 		msg "Messung erfolgreich"
@@ -350,7 +321,7 @@ sub Probe_Z_neg
 	M0
 	G38.2 G91 Z-5 F25							;Werkstück messen
 	G10 L20 P1 Z0								;G54 auf Z0 setzen
-	G1 G91 Z+5 F500								;Vom Sensor zurück fahren
+	G0 G91 Z+5 									;Vom Sensor zurück fahren
 	G90
 	IF [#5067 == 1]
 		msg "Messung erfolgreich"
@@ -372,38 +343,34 @@ sub calib_probe
 	dlgmsg "Referenzmaß eingeben (z.B. von einem 1-2-3 Block)" "Laenge X" 210 "Laenge Y" 211
 	msg "Laenge X = " #210 ", Laenge Y = " #211
 	G38.2 G91 Z-10 F100								;Werkstück Z suchen
-	G1 G91 Z+2 F500									;Vom Sensor zurück fahren
+	G0 G91 Z+2 										;Vom Sensor zurück fahren
 	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
 		G38.2 G91 Z-5 F25							;Werkstück langsam messen
 		G10 L20 P1 Z0								;G54 auf Z0 setzen
-		G1 G91 Z+5 F500								;Vom Sensor zurück fahren
+		G0 G91 Z+5									;Vom Sensor zurück fahren
 	ELSE
 		errmsg "Es wurde kein Werkstueck gefunden!"
 	ENDIF
-	G10 L20 P1 X0								;G54 auf X0 setzen
-	G10 L20 P1 Y0								;G54 auf Y0 setzen
-	G1 G90 X-[#210/2+10] F500
-	G1 G90 Z-3 F300
-	G38.2 G91 X+20 F200
-	G1 G91 X-2 F500
-	G38.2 G91 X+5 F25
-	G1 G91 X-5 F500
-	#212 = #5051
-	msg #212
-	G1 G90 Z10 F500
-	G1 G90 X+[[#210/2]+10] F300
-	G1 G90 Z-3 F300
-	G38.2 G91 X-20 F200
-	G1 G91 X+2 F500
-	G38.2 G91 X-5 F25
-	G1 G91 X+2 F500
-	#213 = #5051
-	msg #213
-	msg "Subtraktion = " [[#212-#213]*-1]
-	msg "Subtraktion von Referenz = "[[[#212-#213]*-1]-#210]
-	msg "/2 = "[[[[#212-#213]*-1]-#210]/2]
+	G10 L20 P1 X0									;G54 auf X0 setzen
+	G10 L20 P1 Y0									;G54 auf Y0 setzen
+	G1 G90 X-[#210/2+10] F500						;10mm links neben das Werkstück fahren
+	G1 G90 Z-3 F300									;Auf Z-3 (Messhöhe) fahren
+	G38.2 G91 X+20 F200								;Werkstück in X+ Richtung suchen
+	G0 G91 X-2										;Vom Messpunkt zurück fahren
+	G38.2 G91 X+5 F25								;Langsame Messung
+	G0 G91 X-5										;Vom Messpunkt zurück fahren
+	#212 = #5051									;Erste Messung zwischenspeichern
+	G0 G90 Z10										;Über das Werkstück fahren
+	G0 G90 X+[[#210/2]+10] 							;10mm rechts neben das Werkstück fahren
+	G0 G90 Z-3 										;Auf Z-3 (Messhöhe) fahren
+	G38.2 G91 X-20 F200								;Werkstück in X- Richtung suchen
+	G0 G91 X+2										;Vom Messpunkt zurück fahren
+	G38.2 G91 X-5 F25								;Langsame Messung
+	G0 G91 X+2										;Vom Messpunkt zurück fahren
+	#213 = #5051									;Zweite Messung zwischenspeichern
+
 	#4300 = [[[[#212-#213]*-1]-#210]/2]
-	msg "Differenz = " #4300
+	msg "Differenz wird in #4300 gespeichert : " #4300
 
 endsub
 
