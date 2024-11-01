@@ -14,6 +14,19 @@
 ;#4235 = Messgeschwindigkeit TLS
 ;#4300 = Durchmesser 3d Probe Spitze / 2
 
+; Position Y des WLS G53
+;#4231 = <TLS_Y> ;muss eingetragen werden
+; Y bei mir unnötig
+; Sichere Höhe für Werkzeugwechsel (IN G53!!)
+#4232 = -70 ;muss eingetragen werden
+; Sichere Höhe für Verfahrwege G53
+#4233 = [#5113-1] ;muss eingetragen werden
+; Suchgeschwindigkeit TLS 
+#4234 = 200 ;muss eingetragen werden
+; Messgeschwindigkeit TLS 
+#4235 = 10 ;muss eigetragen werden
+
+
 
 G17 G21 G90
 
@@ -123,6 +136,18 @@ Endsub
 
 
 sub change_tool
+	; Position Y des WLS G53
+	;#4231 = <TLS_Y> ;muss eingetragen werden
+	; Y bei mir unnötig
+	; Sichere Höhe für Werkzeugwechsel (IN G53!!)
+	#4232 = -70 ;muss eingetragen werden
+	; Sichere Höhe für Verfahrwege G53
+	#4233 = [#5113-1] ;muss eingetragen werden
+	; Suchgeschwindigkeit TLS 
+	#4234 = 200 ;muss eingetragen werden
+	; Messgeschwindigkeit TLS 
+	#4235 = 10 ;muss eigetragen werden
+
 	M5										;Spindel aus
 	M9										;Kühlung aus
 	G1 G53 Z#4233 F500						;Sichere Höhe Verfahrwege
@@ -165,26 +190,23 @@ sub dynamic_tls
 	IF[#5008 == 31]
 		#4230 = -193 ;offset für T31
 	ELSE
-		#4230 = -205 ;wenn nicht T31, dann kein Offset
+		#4230 = -206 ;wenn nicht T31, dann kein Offset
 	ENDIF
 
+	; #234 speichert den Referenzwert(in Z G53) von T99
+	
 	; Position Y des WLS G53
 	;#4231 = <TLS_Y> ;muss eingetragen werden
 	; Y bei mir unnötig
-
 	; Sichere Höhe für Werkzeugwechsel (IN G53!!)
-	#4232 = -50 ;muss eingetragen werden
-
+	#4232 = -70 ;muss eingetragen werden
 	; Sichere Höhe für Verfahrwege G53
 	#4233 = [#5113-1] ;muss eingetragen werden
-
 	; Suchgeschwindigkeit TLS 
 	#4234 = 200 ;muss eingetragen werden
-
 	; Messgeschwindigkeit TLS 
 	#4235 = 10 ;muss eigetragen werden
 
-	; #234 speichert den Referenzwert(in Z G53) von T99
 
 	M5													;Spindel aus
 	M9													;Kühlung aus
@@ -364,7 +386,7 @@ sub calib_probe
 	G1 G90 Z-3 F300
 	G38.2 G91 X+20 F200
 	G1 G91 X-2 F500
-	G38.2 G91 X+5 F200
+	G38.2 G91 X+5 F25
 	G1 G91 X-5 F500
 	#212 = #5051
 	msg #212
@@ -373,7 +395,7 @@ sub calib_probe
 	G1 G90 Z-3 F300
 	G38.2 G91 X-20 F200
 	G1 G91 X+2 F500
-	G38.2 G91 X-5 F200
+	G38.2 G91 X-5 F25
 	G1 G91 X+2 F500
 	#213 = #5051
 	msg #213
