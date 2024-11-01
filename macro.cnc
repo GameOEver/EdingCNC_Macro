@@ -125,6 +125,7 @@ Endsub
 sub change_tool
 	M5										;Spindel aus
 	M9										;Kühlung aus
+	G1 G53 Z#4233 F500						;Sichere Höhe Verfahrwege
 
     ;Use #5015 to indicate succesfull toolchange
     #5015 = 0 ; Tool change not performed
