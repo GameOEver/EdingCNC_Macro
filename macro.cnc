@@ -135,7 +135,7 @@ Endsub
 sub change_tool
 	M5										;Spindel aus
 	M9										;Kühlung aus
-	G1 G53 Z#4233 F500						;Sichere Höhe Verfahrwege
+	G0 G53 Z#4233 							;Sichere Höhe Verfahrwege
 
     ;Use #5015 to indicate succesfull toolchange
     #5015 = 0 ;Tool change not performed
@@ -223,7 +223,7 @@ sub dynamic_tls
 			ENDIF
 		ENDIF
 	ELSE
-		G1 Z#4233 F200 										;Sichere Höhe Verfahrwege
+		G0 Z#4233	 										;Sichere Höhe Verfahrwege
 		errmsg "Kein Sensor gefunden!"						;Error ausgeben, kein Sensor gefunden
 	ENDIF
 EndSub
@@ -353,8 +353,8 @@ sub calib_probe
 	ENDIF
 	G10 L20 P1 X0									;G54 auf X0 setzen
 	G10 L20 P1 Y0									;G54 auf Y0 setzen
-	G1 G90 X-[#210/2+10] F500						;10mm links neben das Werkstück fahren
-	G1 G90 Z-3 F300									;Auf Z-3 (Messhöhe) fahren
+	G0 G90 X-[#210/2+10] 							;10mm links neben das Werkstück fahren
+	G0 G90 Z-3 										;Auf Z-3 (Messhöhe) fahren
 	G38.2 G91 X+20 F200								;Werkstück in X+ Richtung suchen
 	G0 G91 X-2										;Vom Messpunkt zurück fahren
 	G38.2 G91 X+5 F25								;Langsame Messung
@@ -474,56 +474,6 @@ endsub
 ;sub user_reset
 ;    msg "Ready for operation"
 ;endsub 
-
-;The 4 subroutines below can be used to add extra code
-;add the beginning and end for engrave or laser_engrave
-sub laser_engrave_start
-  msg "laser_engrave_start"
-endsub
-
-sub laser_engrave_end
-  msg "laser_engrave_end"
-endsub
-
-sub engrave_start
-  msg "laser_engrave_start"
-endsub
-
-sub engrave_end
-  msg "laser_engrave_end"
-endsub
-
-
-; Functions below are used with sheetCAM 
-; postprocessor Eding CNC plasma with THC-V2.scpost
-sub thcOn
-  m20
-endsub
-
-sub thcOff
-  m21
-endsub
-
-sub thcPenDown
-  gosub thcReference ; Determine zero pint always at start
-  G0 Z4 ; 4 is pierce height. 0 is material surface.
-  M3    ; plasma on
-  G4 P3 ; pierce delay
-endSub
-
-sub thcPenUp
-  m5    ; Plasma off
-  g4 p1 ; end delay
-endsub
-
-
-sub thcReference
-  if [[#5380 == 0] and [#5397 == 0]] ;Probe only when running
-    G53 G38.2 Z[#5103+1] F50 ;lowest point 1 mm above negative Z limit with low Feed
-    G0 Z[#5063] ;move back to toch point
-    G92 Z0 ;Use 0 if the totch itself touches the material, otherwise use the switch offset
-  endif
-endsub
 
 ; The start subroutine is called when a job is started
 sub start
