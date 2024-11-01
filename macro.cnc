@@ -1,7 +1,10 @@
 ;*****************************************
 ; Version von Jens
 
-
+;#210 = Laenge X waehrend Kalibrierung
+;#211 = Laenge Y waehrend Kalibrierung
+;#212 = 1. Messpunkt X waehrend Kalibrierung
+;#213 = 2. Messpunkt X waehrend Kalibrierung
 ;#234 = Z Offset (errechnet)
 ;#4230 = X Position TLS
 ;#4231 = Y Position TLS
@@ -9,6 +12,7 @@
 ;#4233 = Sichere Höhe für Verfahrwege G53
 ;#4234 = Suchgeschwindigkeit TLS
 ;#4235 = Messgeschwindigkeit TLS
+;#4300 = Durchmesser 3d Probe Spitze
 
 
 G17 G21 G90
@@ -333,11 +337,50 @@ sub Probe_Z_neg
 endsub
 
 sub calib_probe
+
+
+	; Messergebnisse in G53
+	;X -> #5051
+	;Y -> #5052
+	;Z -> #5053
+
 	msg "Mittig ueber das zu messende Werkstueck fahren, es wird zuerst Z gemessen"
 	M0
-	dlgmsg "Referenzmaß eingeben (z.B. von einem 1-2-3 Block" "Laenge X" 210 "Laenge Y" 211
+	dlgmsg "Referenzmaß eingeben (z.B. von einem 1-2-3 Block)" "Laenge X" 210 "Laenge Y" 211
 	msg "Laenge X = " #210 ", Laenge Y = " #211
-
+	G38.2 G91 Z-10 F100								;Werkstück Z suchen
+	G1 G91 Z+2 F500									;Vom Sensor zurück fahren
+	IF [#5067 == 1]									;Wenn Sensor gefunden wurde
+		G38.2 G91 Z-5 F25							;Werkstück langsam messen
+		G10 L20 P1 Z0								;G54 auf Z0 setzen
+		G1 G91 Z+5 F500								;Vom Sensor zurück fahren
+	ELSE
+		errmsg "Es wurde kein Werkstueck gefunden!"
+	ENDIF
+	G10 L20 P1 X0								;G54 auf X0 setzen
+	G10 L20 P1 Y0								;G54 auf Y0 setzen
+	G1 G90 X-[#210/2+10] F500
+	G1 G90 Z-3 F300
+	G38.2 G91 X+20 F200
+	G1 G91 X-2 F500
+	G38.2 G91 X+5 F200
+	G1 G91 X-5 F500
+	#212 = #5051
+	msg #212
+	G1 G90 Z10 F500
+	G1 G90 X+[[#210/2]+10] F300
+	G1 G90 Z-3 F300
+	G38.2 G91 X-20 F200
+	G1 G91 X+2 F500
+	G38.2 G91 X-5 F200
+	G1 G91 X+2 F500
+	#213 = #5051
+	msg #213
+	msg "Subtraktion = " [[#212-#213]*-1]
+	msg "Subtraktion von Referenz = "[[[#212-#213]*-1]-#210]
+	msg "/2 = "[[[[#212-#213]*-1]-#210]/2]
+	#4300 = [[[[#212-#213]*-1]-#210]/2]
+	msg "Differenz = " #4300
 
 endsub
 
