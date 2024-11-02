@@ -374,6 +374,28 @@ sub calib_probe
 
 endsub
 
+sub measure_length
+
+	
+endsub
+
+sub spindle_warmup
+	msg "Zu sicherer Position fahren, dann Cycle Start druecken!"
+	M0
+	M3 S3000
+	G4 P60
+	M3 S6000
+	G4 P180
+	M3 S12000
+	G4 P180
+	M3 S18000
+	G4 P180
+	M3 S24000
+	G4 P180
+	M5 
+	msg "Warmup abgeschlossen."
+endsub
+
 sub zhcmgrid
 ;;;;;;;;;;;;;
 ;probe scanning routine for eneven surface milling
