@@ -15,17 +15,20 @@
 ;#4234 = Suchgeschwindigkeit TLS
 ;#4235 = Messgeschwindigkeit TLS
 ;#4300 = Durchmesser 3d Probe Spitze / 2
+;#4301 = Kompensation Z Offset Probe-Toolsetter
 
 G17 G21 G90 F500			;Grundeinstellung setzen
 
-
-IF [#3500 == 0]
-	#3500 = 1
-	#4232 = -70 			;Sichere Höhe für Werkzeugwechsel (IN G53!!)
-	#4233 = [#5113-1]		;Sichere Höhe für Verfahrwege G53
-	#4234 = 200				;Suchgeschwindigkeit Probe/TLS (mm/min)
-	#4235 = 10				;Messgeschwindigkeit Probe/TLS (mm/min)
-ENDIF
+sub INIT
+	IF [#3500 == 0]
+		#3500 = 1
+		#4232 = -70 			;Sichere Höhe für Werkzeugwechsel (IN G53!!)
+		#4233 = [#5113-1]		;Sichere Höhe für Verfahrwege G53
+		#4234 = 200				;Suchgeschwindigkeit Probe/TLS (mm/min)
+		#4235 = 10				;Messgeschwindigkeit Probe/TLS (mm/min)
+		#4301 = 0.297			;Kompensation Z Offset Probe-Toolsetter
+	ENDIF
+endsub
 	
 ;User functions, F1..F11 in user menu
 
@@ -214,8 +217,8 @@ sub dynamic_tls
 			msg "Referenz auf G53 "#5053" gesetzt."
 		ELSE												;Wenn nicht T99
 			IF [[#234] <> 0]								;Wenn Referenzwert vorhanden
-				#[5400+#5008]=[#5053 - #234]				;Z-Offset berechnen und auf Tooltable anwenden
-				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#234]""
+				#[5400+#5008]=[#5053 - #234 + #4301]				;Z-Offset berechnen und auf Tooltable anwenden
+				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#234+#4301]""
 				G43											;TLO vom Tooltable aktivieren
 			ELSE											;Wenn kein Referenzwert vorhanden
 				#234 = #5053								;Referenzwert setzen
@@ -493,9 +496,10 @@ endsub
 
 ;Remove comments if you want additional reset actions
 ;when reset button was pressed in UI
-;sub user_reset
-;    msg "Ready for operation"
-;endsub 
+sub user_reset
+    msg "User reset"
+	gosub INIT
+endsub 
 
 ; The start subroutine is called when a job is started
 sub start
