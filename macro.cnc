@@ -26,7 +26,7 @@ sub INIT
 		#4233 = [#5113-1]		;Sichere Höhe für Verfahrwege G53
 		#4234 = 200				;Suchgeschwindigkeit Probe/TLS (mm/min)
 		#4235 = 10				;Messgeschwindigkeit Probe/TLS (mm/min)
-		#4301 = 0.297			;Kompensation Z Offset Probe-Toolsetter
+		#4301 = 0.08			;Kompensation Z Offset Probe-Toolsetter
 	ENDIF
 endsub
 	
@@ -145,7 +145,7 @@ sub change_tool
 	#3001 = 0 ;Not the same tool being loaded
 
     ; check tool in spindle and exit sub
-    If [ [#5011] == [#5008] ]
+    If [ [#5011] == [#5008] AND [[#5008] <> 99] ]
         msg "Tool already in spindle"
         #5015 = 1 ;indicate tool change performed
 		#3001 = 1 ;same tool being loaded
@@ -177,9 +177,9 @@ sub dynamic_tls
 
 	; Position X des WLS G53
 	IF[#5008 == 31]
-		#4230 = -193 ;offset für T31
+		#4230 = -214 ;offset für T31
 	ELSE
-		#4230 = -206 ;wenn nicht T31, dann kein Offset
+		#4230 = -202 ;wenn nicht T31, dann kein Offset
 	ENDIF
 
 	; #234 speichert den Referenzwert(in Z G53) von T99
@@ -202,12 +202,14 @@ sub dynamic_tls
 
 	msg "Messung wird gesartet. Mit Cycle Start fortfahren."
 	M0
-
-	G38.2 G91 Z-100 F#4234 									;look for TLS
+;
+; MAKE SURE YOUR DON'T TRIGGER SOFTLIMITS WITH THE FOLLOWING TWO G38.2's
+;
+	G38.2 G91 Z-95 F#4234 									;look for TLS
 	G0 G91 Z+2												;Von Sensor zurück fahren
 
 	IF [[#5067] == 1]										;Wenn Sensor gefunden wurde
-		G38.2 G91 Z-5 F#4235 								;Werkzeug messen
+		G38.2 G91 Z-3 F#4235 								;Werkzeug messen
 		G0 G91 Z+5											;Von Sensor zurück fahren
 		G90													;Absolute Koordinaten verwenden
 		G0 G53 Z#4233										;Sichere Höhe Verfahrwege
@@ -217,7 +219,7 @@ sub dynamic_tls
 			msg "Referenz auf G53 "#5053" gesetzt."
 		ELSE												;Wenn nicht T99
 			IF [[#234] <> 0]								;Wenn Referenzwert vorhanden
-				#[5400+#5008]=[#5053 - #234 + #4301]				;Z-Offset berechnen und auf Tooltable anwenden
+				#[5400+#5008]=[#5053 - #234 + #4301]		;Z-Offset berechnen und auf Tooltable anwenden
 				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#234+#4301]""
 				G43											;TLO vom Tooltable aktivieren
 			ELSE											;Wenn kein Referenzwert vorhanden
