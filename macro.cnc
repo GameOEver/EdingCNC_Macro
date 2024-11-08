@@ -5,9 +5,9 @@
 ;#211 = Laenge Y waehrend Kalibrierung
 ;#212 = 1. Messpunkt X waehrend Kalibrierung
 ;#213 = 2. Messpunkt X waehrend Kalibrierung
-;#234 = Z Offset (errechnet)
 ;#3000 = INIT
 ;#3001 = Used in change_tool
+;#4200 = TLR Probe
 ;#4230 = X Position TLS
 ;#4231 = Y Position TLS
 ;#4232 = Sichere Höhe für Werkzeugwechsel (IN G53!!)
@@ -182,7 +182,7 @@ sub dynamic_tls
 		#4230 = -202 ;wenn nicht T31, dann kein Offset
 	ENDIF
 
-	; #234 speichert den Referenzwert(in Z G53) von T99
+	; #4200 speichert den Referenzwert(in Z G53) von T99
 	
 	M5													;Spindel aus
 	M9													;Kühlung aus
@@ -191,7 +191,7 @@ sub dynamic_tls
 	G0 G53 Z#4232 										;Starthöhe Messung TLS
 	G4 P0												;wait for moves to finish
 
-	IF [[#5008 <> 99] AND [#234 == 0]]
+	IF [[#5008 <> 99] AND [#4200 == 0]]
 		dlgmsg "Es ist noch kein Z Offset für die Probe gesetzt. Fortfahren?"
 			IF [[#5398] == 1]
 														;Programm fortführen
@@ -215,15 +215,15 @@ sub dynamic_tls
 		G0 G53 Z#4233										;Sichere Höhe Verfahrwege
 
 		IF [[#5008] == 99]									;Wenn T99(Probe)
-			#234 = #5053									;Referenzwert setzen
+			#4200 = #5053									;Referenzwert setzen
 			msg "Referenz auf G53 "#5053" gesetzt."
 		ELSE												;Wenn nicht T99
-			IF [[#234] <> 0]								;Wenn Referenzwert vorhanden
-				#[5400+#5008]=[#5053 - #234 + #4301]		;Z-Offset berechnen und auf Tooltable anwenden
-				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#234+#4301]""
+			IF [[#4200] <> 0]								;Wenn Referenzwert vorhanden
+				#[5400+#5008]=[#5053 - #4200 + #4301]		;Z-Offset berechnen und auf Tooltable anwenden
+				msg "Neuer Z-Offset fuer Tool "#5008" : "[#5053-#4200+#4301]""
 				G43											;TLO vom Tooltable aktivieren
 			ELSE											;Wenn kein Referenzwert vorhanden
-				#234 = #5053								;Referenzwert setzen
+				#4200 = #5053								;Referenzwert setzen
 				msg "Referenz auf G53 "#5053" gesetzt."
 			ENDIF
 		ENDIF
@@ -240,10 +240,7 @@ sub 3dmessung
 	;Y -> #5052
 	;Z -> #5053
 
-	msg "PROBE ANSCHLIESSEN!!!"
-	M0
-
-	msg "An linke untere Ecke fahren, Z wird zuerst gemessen."
+	msg "PROBE ANSCHLIESSEN! und an linke untere Ecke fahren, Z wird zuerst gemessen."
 	M0
 
 	G38.2 G91 Z-10 F100								;Werkstück suchen
@@ -379,7 +376,7 @@ sub calib_probe
 
 endsub
 
-sub measure_length
+sub measure_length ;to-do
 
 	
 endsub
@@ -403,7 +400,7 @@ endsub
 
 sub zhcmgrid
 ;;;;;;;;;;;;;
-;probe scanning routine for eneven surface milling
+;probe scanning routine for uneven surface milling
 ;scanning starts at x=0, y=0
 
   if [#4100 == 0]
