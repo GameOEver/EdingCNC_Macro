@@ -1,6 +1,6 @@
 ;*****************************************
 ; Version von Jens
-
+;* @unit mm
 ;#210 = Laenge X waehrend Kalibrierung
 ;#211 = Laenge Y waehrend Kalibrierung
 ;#212 = 1. Messpunkt X waehrend Kalibrierung
