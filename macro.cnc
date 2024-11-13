@@ -33,27 +33,27 @@ endsub
 ;User functions, F1..F11 in user menu
 
 Sub user_1
-    msg "sub user_1"
+    gosub 3dmessung
 Endsub
 
 Sub user_2
-    msg "sub user_2"
+    gosub Probe_X_pos
 Endsub
 
 Sub user_3 
-    msg "sub user_3"
+    gosub Probe_Y_pos
 Endsub
 
 Sub user_4
-    msg "sub user_4"
+    gosub Probe_Z_neg
 Endsub
 
 Sub user_5
-    msg "sub user_5"
+    gosub dynamic_tls
 Endsub
 
 Sub user_6
-    msg "sub user_6"
+    gosub spindle_warmup
 Endsub
 
 Sub user_7
@@ -229,7 +229,7 @@ sub dynamic_tls
 		ENDIF
 	ELSE
 		G0 Z#4233	 										;Sichere Höhe Verfahrwege
-		errmsg "Kein Sensor gefunden!"						;Error ausgeben, kein Sensor gefunden
+		warnmsg "Kein Sensor gefunden!"						;Error ausgeben, kein Sensor gefunden
 	ENDIF
 EndSub
 
