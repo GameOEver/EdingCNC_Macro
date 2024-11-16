@@ -69,7 +69,7 @@ Sub user_9
 Endsub
 
 Sub user_10
-    gosub 3dmessung
+    msg "sub user_10"
 Endsub
 
 Sub user_11
@@ -116,23 +116,27 @@ sub home_all
     msg "Home complete"
 endsub
 
-Sub zero_set_rotation				;automation needed
-    msg "move to first point, press control-G to continue"
+Sub probe_rotation
+    msg "1. Position: 5mm vor das Werkstueck fahren, dann Cycle Start druecken!"
     m0
-    #5020 = #5071 ;x1
-    #5021 = #5072 ;y1
-    msg "move to second point, press control-G to continue"
+	G38.2 G91 Y+10 F50
+	G0 G91 Y-2
+    #5020 = #5051 ;x1
+    #5021 = #5052 ;y1
+    msg "2. Position: 5mm vor das Werkstueck fahren, dann Cycle Start druecken!"
     m0
-    #5022 = #5071 ;x2
-    #5023 = #5072 ;y2
+	G38.2 G91 Y+10 F50
+	G0 G91 Y-2
+    #5022 = #5051 ;x2
+    #5023 = #5052 ;y2
     #5024 = ATAN[#5023 - #5021]/[#5022 - #5020]
     if [#5024 > 45]
       #5024 = [#5024 - 90] ;points are in Y direction
     endif
     g68 R#5024
     msg "G68 R"#5024" applied, now zero XYZ normally"
+	g90
 Endsub
-
 
 
 sub change_tool
@@ -376,8 +380,27 @@ sub calib_probe
 
 endsub
 
-sub measure_length ;to-do
+sub modbus_write_on_0
 
+	Modbus s1 f5 a0 v1 b9600 fb=n1
+	
+endsub
+
+sub modbus_write_off_0
+
+	Modbus s1 f5 a0 v0 b9600 fb=n1
+	
+endsub
+
+sub modbus_write_on_1
+
+	Modbus s1 f5 a1 v1 b9600 fb=n1
+	
+endsub
+
+sub modbus_write_off_1
+
+	Modbus s1 f5 a1 v0 b9600 fb=n1
 	
 endsub
 
