@@ -3,8 +3,8 @@
 ;* @unit mm
 ;#210 = Laenge X waehrend Kalibrierung
 ;#211 = Laenge Y waehrend Kalibrierung
-;#212 = 1. Messpunkt X waehrend Kalibrierung
-;#213 = 2. Messpunkt X waehrend Kalibrierung
+;#212 = 1. Messpunkt X waehrend Kalibrierung und Centerfinder
+;#213 = 2. Messpunkt X waehrend Kalibrierung und Centerfinder
 ;#3000 = INIT
 ;#3001 = Used in change_tool
 ;#4200 = TLR Probe
@@ -16,6 +16,18 @@
 ;#4235 = Messgeschwindigkeit TLS
 ;#4300 = Durchmesser 3d Probe Spitze / 2
 ;#4301 = Kompensation Z Offset Probe-Toolsetter
+
+;*******************
+;Centerfinder
+
+;#4310 = Laenge X
+;#4311 = Laenge Y
+;#4312 = Messhoehe
+;#4313 = Sicherheitsdistanz Werkstueck
+;#4314 = Suchdistanz
+;#4315 = Suchgeschwindigkeit
+;#4316 = Messgeschwindigkeit
+;*******************
 
 G17 G21 G90 F500			;Grundeinstellung setzen
 
@@ -419,6 +431,52 @@ sub spindle_warmup
 	G4 P180
 	M5 
 	msg "Warmup abgeschlossen."
+endsub
+
+;*******************
+;Centerfinder
+
+;#4310 = Laenge X
+;#4311 = Laenge Y
+;#4312 = Messhoehe
+;#4313 = Sicherheitsdistanz Werkstueck
+;#4314 = Suchdistanz
+;#4315 = Suchgeschwindigkeit
+;#4316 = Messgeschwindigkeit
+;#212 = 1. Messpunkt
+;#213 = 2. Messpunkt
+;*******************
+
+
+sub Centerfinder
+	M5
+	M9
+	dlgmsg "Center finder" "Laenge X" 4310 "Laenge Y" 4311 "Messhoehe" 4312 "Sicherheitsdistanz Werkstueck" 4313 "Suchdistanz" 4314 "Suchgeschwindigkeit" 4315 "Messgeschwindigkeit" 4316
+	IF [#5398 == 1]
+		msg "Ungefaehr ueber die Mitte des Werkstuecks fahren, maximal 5mm Hoehe. Es wirz zuerst Z vermessen!"
+		M0
+		G38.2 G91 Z-#4314 F#4315
+		G0 G91 Z+2
+		G38.2 G91 Z-3 F#4316
+		G10 L20 P1 Z0
+		G0 G91 Z+5
+		G0 G91 X-[#4310+#4313]
+		G1 G90 Z#4312 F#4315
+		G38.2 G91 X+#4314 F#4315
+		G0 G91 X-2
+		G38.2 G91 X+#4314 F#4316
+		#212 = #5061
+		G0 G90 Z5
+		G0 G90 X[#212+#4310+#4313]
+		G1 G90 Z#4312 F#4315
+		G38.2 G91 X-#4314 F#4315
+		G0 G91 X+2
+		G38.2 G91 X-#4314 F#4316
+		#213 = #5061
+		G0 G91 X+5
+		G0 G90 Z5
+		
+	ENDIF
 endsub
 
 sub zhcmgrid
