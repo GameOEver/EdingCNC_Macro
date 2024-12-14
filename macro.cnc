@@ -128,6 +128,29 @@ sub home_all
     msg "Home complete"
 endsub
 
+
+sub m3
+	M56 P102 ;(Read Relay Board1 Input2)
+	If [#5399 <> 1]
+  		Errmsg "Tool not clamped"
+	Endif
+
+	IF [#19 == 3]
+		M5
+		msg "Drehzahl fuer nicht rotierende Werkzeuge erkannt, Spindel startet nicht"
+	ELSE
+		M54 P104  ;(Sperrluft ein)
+		M3 S#19
+	ENDIF
+endsub
+
+sub m5
+	m5 
+	msg "Debug Spindel aus"
+	M55 P104 ;(Sperrluft aus)
+endsub
+
+
 Sub probe_rotation
     msg "1. Position: 5mm vor das Werkstueck fahren, dann Cycle Start druecken!"
     m0
@@ -179,6 +202,51 @@ sub change_tool
     
         
 endsub      
+
+sub change_tool_atc
+	M5										;Spindel aus
+	M9										;Kühlung aus
+	G0 G53 Z#4233 							;Sichere Höhe Verfahrwege
+
+    ;Use #5015 to indicate succesfull toolchange
+    #5015 = 0 ;Tool change not performed
+	#3001 = 0 ;Not the same tool being loaded
+
+    ; check tool in spindle and exit sub
+    If [ [#5011] == [#5008] AND [[#5008] <> 99] ]
+        msg "Tool already in spindle"
+        #5015 = 1 ;indicate tool change performed
+		#3001 = 1 ;same tool being loaded
+    ELSE  
+		msg "Tool festhalten, mit Cycle Start wird dieses ausgeworfen!"
+		M0
+
+		M54 P101  ;(Relay Board1 Out1 on, Air inlet)
+		M56 P101 L1 Q10 ;(Read Relay Board1 Input1)
+		If [#5399 == -1]
+  			Errmsg "Timeout while waiting for Tool released becoming active"
+		Endif
+		M54 P102  ;(Relay Board1 Out2 on, Dust removal)
+		msg "Tool "#5011" einsetzen und festhalten, dann mit Cycle Start fortfahren!"
+		M0   
+		M55 P101  ;(Relay Board1 Out1 off, Air inlet)
+		M55 P102  ;(Relay Board1 Out2 off, Dust removal)
+		M56 P102 L1 Q10 ;(Read Relay Board1 Input2)
+		If [#5399 == -1]
+  			Errmsg "Timeout while waiting for Tool clamped becoming active"
+		Endif
+		M54 P103  ;(Relay Board1 Out3 on, Air return)
+		G4 P5
+		M55 P103  ;(Relay Board1 Out3 off, Air return)
+		#5015 = 1 ; Tool change performed
+	ENDIF
+	
+	IF [[#3001] == 0] THEN   
+		msg "Tool " #5008" durch Tool " #5011 " ersetzt."
+	    M6 T[#5011]					; Neue Werkzeugnummer setzen
+		gosub dynamic_tls			; Tool einmessen
+	ENDIF
+endsub
     
 sub dynamic_tls
 	; Variablen 27-4994 sind frei verfügbar
